@@ -1,0 +1,80 @@
+substitutions:
+  _CUSTOM_REGION: europe-west1-b
+  _CUSTOM_CLUSTER: furiousduck-workflow-cluster
+
+steps:
+  # Start app (api + db + front)
+  - name: 'docker/compose:1.23.1'
+    id: 'start-containers'
+    args: ['-f', 'docker-compose.test.ci.yaml', 'up', '-d']
+
+  # Run unit tests
+  # - name: 'gcr.io/cloud-builders/docker'
+  #   id: 'unit-test'
+  #   args: ['exec', 'thetiptop-front-test', 'npm', 'run', 'cypress:component --browser chrome --port 8000']
+  #   waitFor: ['start-containers']
+
+  # Run e2e tests
+  # inside the thetiptop-front-test docker container that was previously started
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'e2e-test'
+    args: ['exec', 'thetiptop-front-test', 'npm', 'run', 'cypress:e2e', '--browser', 'chrome', '--port', '8000']
+    waitFor: ['start-containers']
+
+  # Shut down docker containers
+  - name: 'docker/compose:1.23.1'
+    id: 'docker-compose-down'
+    args: ['-f', 'docker-compose.test.ci.yaml', 'down']
+    waitFor: ['e2e-test']
+
+  # Docker Build API
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t',
+           'europe-west1-docker.pkg.dev/${PROJECT_ID}/thetiptop-webapp-docker-repo/thetiptop-backend-image',
+           'thetiptop-api/']
+
+  # Docker Push API
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push',
+           'europe-west1-docker.pkg.dev/${PROJECT_ID}/thetiptop-webapp-docker-repo/thetiptop-backend-image']
+
+  # Install npm dependencies for frontend build
+  - name: node
+    entrypoint: npm
+    args: ['--prefix', 'thetiptop-front', 'install', '--force']
+
+  # Build frontend
+  - name: node
+    entrypoint: npm
+    args: ['--prefix', 'thetiptop-front', 'run', 'build:staging']
+
+  # Push frontend build folder to bucket
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['cp', '-r', 'thetiptop-front/build/*', 'gs://thetiptop-staging']
+
+  - name: gcr.io/cloud-builders/kubectl
+    id: Configure kubectl
+    args:
+      - cluster-info
+    env:
+      - CLOUDSDK_COMPUTE_REGION=$_CUSTOM_REGION
+      - CLOUDSDK_CONTAINER_CLUSTER=$_CUSTOM_CLUSTER
+      - KUBECONFIG=/workspace/.kube/config
+
+  - name: gcr.io/${PROJECT_ID}/helm
+    id: Deploy chart
+    args: ['upgrade', '--install', '-n', 'thetiptop-staging', 'thetiptop', './thetiptop', '-f', './thetiptop/values-staging.yaml', '--create-namespace']
+    env:
+      - KUBECONFIG=/workspace/.kube/config
+      - TILLERLESS=true
+
+
+  # # deploy container image to GKE
+  # - name: "gcr.io/cloud-builders/gke-deploy"
+  #   args: ['run',
+  #          '--filename=kubernetes-manifests/deployments',
+  #          '--location=europe-west1-b',
+  #          '--cluster=furiousduck-workflow-cluster']
+
+options:
+  logging: CLOUD_LOGGING_ONLY

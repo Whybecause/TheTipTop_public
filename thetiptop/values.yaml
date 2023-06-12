@@ -1,0 +1,123 @@
+# Default values for thetiptop-prod.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: europe-west1-docker.pkg.dev/furiousduck-workflow/thetiptop-webapp-docker-repo/thetiptop-backend-image
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+    # nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # kubernetes.io/ingress.global-static-ip-name: "thetiptop-static-ip"
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: api.dsp-archiwebo21-sb-lm-mt-hg.fr
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+environment:
+  apiDatabasePwd: "siEagffcJM"
+  port: "80"
+  instanceHost: "0.0.0.0"
+  # instanceHost: "0.0.0.0"
+  dbPort: "5432"
+  apiDatabasePort: "5432"
+  # apiDatabaseHost: "postgresql"
+  apiDatabaseHost: thetiptop-postgresql.thetiptop-prod
+  apiDatabaseDialect: "postgres"
+  apiDatabaseUsername: "postgres-prod-user"
+  apiDatabaseName: "postgres-prod-db"
+  jwttokenSecretKey: reijogrpgokr2095i4worjngoefjdgeprgepkwplgkr3094
+  refreshTokenSecret: orgrigjri320tj03ut4h0gpoj35809u2j4g3igj29j4gi24
+  saltrounds: "8"
+  maximumGifts: "150000"
+  googleClientId: 1086669301221-gj0jkar6vcquorroa24849p54ped9jij.apps.googleusercontent.com
+  googleClientSecret: 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
+  contactEmail: thetiptopg1analytics@gmail.com
+  oauth2ClientId: 950508311820-sr5u8p3kt045d6h5lha6e6dqu6j22h2j.apps.googleusercontent.com
+  oauth2ClientSecret: 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
+  oauth2ClientRefreshToken: 1//04KmceSFu_BmvCgYIARAAGAQSNwF-L9IrZWTQILd9CeHJZHNAR8ghjYYj23nDnJdUg_t6tJkQQlgpUju6c49AA0zyYn8lg82WuMQ
+  clientUrl: dsp-archiwebo21-sb-lm-mt-hg.fr
+  adminEmail: admin@thetiptop.com
+  adminPassword: adminadmin
+  employeeEmail: employee@thetiptop.com
+  employeePassword: employee
+  userEmail: user@thetiptop.com
+  userPassword: useruser
+
+global:
+  storageClass: thetiptop-pd-storageclass
+  postgresql:
+    auth:
+      username: postgres-prod-user
+      database: postgres-prod-db
+      password: siEagffcJM
+      postgresPassword: root

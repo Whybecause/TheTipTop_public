@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "thetiptop-prod.fullname" . }}
+  labels:
+    {{- include "thetiptop-prod.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "thetiptop-prod.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "thetiptop-prod.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "thetiptop-prod.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /helloworld
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /helloworld
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+          - name: API_DATABASE_PWD
+            value: {{ quote .Values.environment.apiDatabasePwd }}
+          - name: PORT
+            value: {{ quote $.Values.environment.port }}
+          - name: INSTANCE_HOST
+            value: {{ quote .Values.environment.instanceHost }}
+          - name: DB_PORT
+            value: {{ quote .Values.environment.dbPort }}
+          - name: API_DATABASE_PORT
+            value: {{ quote .Values.environment.apiDatabasePort }}
+          - name: API_DATABASE_HOST
+            value: {{ quote .Values.environment.apiDatabaseHost }}
+          - name: API_DATABASE_DIALECT
+            value: {{ quote .Values.environment.apiDatabaseDialect }}
+          - name: API_DATABASE_USERNAME
+            value: {{ quote .Values.environment.apiDatabaseUsername }}
+          - name: API_DATABASE_NAME
+            value: {{ quote .Values.environment.apiDatabaseName }}
+          - name: JWTTOKEN_SECRET_KEY
+            value: {{ quote .Values.environment.jwttokenSecretKey }}
+          - name: REFRESH_TOKEN_SECRET
+            value: {{ quote .Values.environment.refreshTokenSecret }}
+          - name: SALTROUNDS
+            value: {{ quote .Values.environment.saltrounds }}
+          - name: MAXIMUM_GIFTS
+            value: {{ quote .Values.environment.maximumGifts }}
+          - name: GOOGLE_CLIENT_ID
+            value: {{ quote .Values.environment.googleClientId }}
+          - name: GOOGLE_CLIENT_SECRET
+            value: {{ quote .Values.environment.googleClientSecret }}
+          - name: CONTACT_EMAIL
+            value: {{ quote .Values.environment.contactEmail }}
+          - name: OAUTH2_CLIENT_ID
+            value: {{ quote .Values.environment.oauth2ClientId }}
+          - name: OAUTH2_CLIENT_SECRET
+            value: {{ quote .Values.environment.oauth2ClientSecret }}
+          - name: OAUTH2_CLIENT_REFRESH_TOKEN
+            value: {{ quote .Values.environment.oauth2ClientRefreshToken }}
+          - name: CLIENT_URL
+            value: {{ quote .Values.environment.clientUrl }}
+          - name: ADMIN_EMAIL
+            value: {{ quote .Values.environment.adminEmail }}
+          - name: ADMIN_PASSWORD
+            value: {{ quote .Values.environment.adminPassword }}
+          - name: EMPLOYEE_EMAIL
+            value: {{ quote .Values.environment.employeeEmail }}
+          - name: EMPLOYEE_PASSWORD
+            value: {{ quote .Values.environment.employeePassword }}
+          - name: USER_EMAIL
+            value: {{ quote .Values.environment.userEmail }}
+          - name: USER_PASSWORD
+            value: {{ quote .Values.environment.userPassword }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
